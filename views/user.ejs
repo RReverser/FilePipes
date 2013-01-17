@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/javascripts/helper.js"></script>
+    <script>
+    (function() {
+        addEventListener('load', function () {
+            var socket = getPageSocket();
+
+            socket.on('updateFiles', function(files) {
+                $('joinedFiles').innerHTML = '';
+
+                if (!files) {
+                	alert('Seeder has been disconnected. Thank you for using our service!');
+                	close();
+                }
+
+                Array.prototype.forEach.call(files, function(file) {
+                    var row = $('joinedFiles').insertRow(-1);
+                    row.insertCell(-1).innerHTML = file.name;
+                    row.insertCell(-1).innerHTML = file.size;
+                    row.insertCell(-1).innerHTML = file.type;
+                });
+            });
+        });
+    })();
+    </script>
+  </head>
+  <body>
+    <h1><%= title %></h1>
+    <table border="1" cellpadding="3" style="border-collapse: collapse">
+        <thead>
+            <tr>
+                <th>File name</th>
+                <th>File size</th>
+                <th>File type</th>
+            </tr>
+        </thead>
+        <tbody id="joinedFiles">
+		    <% files.forEach(function(file) { %>
+			    <tr>
+			    	<td><%= file.name %></td>
+			    	<td><%= file.size %></td>
+			    	<td><%= file.type %></td>
+			    </tr>
+		    <% }) %>
+        </tbody>
+    </table>
+  </body>
+</html>

@@ -1,42 +1,52 @@
-var app = require('http').createServer(httpHandler),
-io = require('socket.io').listen(app),
-fs = require('fs');
+/**
+ * Module dependencies.
+ */
 
-io.set('log level', 2);
-app.listen(3000);
-
-function httpHandler(req, res) {
-    fs.readFile(__dirname + '/index.html', function (err, data) {
-        if (err) {
-            res.writeHead(500);
-            return res.end('Error loading index.html');
-        }
-
-        res.writeHead(200, {'Content-Type': 'text/html'});
-        res.end(data);
+var express = require('express'),
+    routes = require('./routes'),
+    user = require('./routes/user'),
+    http = require('http'),
+    path = require('path'),
+    app = express(),
+    httpServer = http.createServer(app),
+    io = require('socket.io').listen(httpServer, {
+        'log level': 2
     });
-}
 
-io.sockets.on('connection', function (socket) {
-    socket.on('updateFiles', function (newFiles) {
+global.io = io;
+
+app.configure(function() {
+    app.set('port', process.env.PORT || 3000);
+    app.set('views', __dirname + '/views');
+    app.set('view engine', 'ejs');
+    app.use(express.favicon());
+    app.use(express.logger('dev'));
+    app.use(express.bodyParser());
+    app.use(express.methodOverride());
+    app.use(express.static(path.join(__dirname, 'public')));
+    app.use(app.router);
+});
+
+app.configure('development', function() {
+    app.use(express.errorHandler());
+});
+
+app.get('/', routes.index);
+app.get('/:seederId', user.fileList);
+app.get('/:seederId/:fileName', user.fileDownload);
+
+httpServer.listen(app.get('port'), function() {
+    console.log("Express server listening on port " + app.get('port'));
+});
+
+io.sockets.on('connection', function(socket) {
+    socket.on('updateFiles', function(newFiles) {
         console.log(socket.id + ' updated list of files (count = ' + newFiles.length + ')')
-        socket.files = newFiles;
-        io.sockets.in(socket.id).emit('updateFiles', newFiles);
+        socket.set('files', newFiles);
+        io.of('/' + socket.id).emit('updateFiles', newFiles);
     });
 
-    socket.on('join', function (socketId) {
-        console.log(socket.id + ' is switching from ' + socket.joinedId + ' to ' + socketId);
-
-        if (socket.joinedId) socket.leave(socket.joinedId);
-        socket.joinedId = socketId;
-
-        if (!(socketId in io.sockets.sockets)) {
-            socket.emit('updateFiles');
-            return;
-        }
-        socket.join(socketId);
-        socket.emit('updateFiles', io.sockets.sockets[socketId].files);
+    socket.on('disconnect', function() {
+        io.of('/' + socket.id).emit('updateFiles');
     });
-
-    socket.emit('updateFiles', socket.joinedId in io.sockets.sockets ? io.sockets.sockets[socket.joinedId].files : null);
 });
