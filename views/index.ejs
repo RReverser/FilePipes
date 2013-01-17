@@ -6,16 +6,16 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="/javascripts/helper.js"></script>
     <script>
-    addEventListener('load', function () {
+    addEventListener('load', function() {
         function getFiles() {
-            return Array.prototype.map.call($('file').files, function (file) {
+            return Array.prototype.map.call($('file').files, function(file) {
                 return {name: file.name, size: file.size, type: file.type};
             });
         }
 
         var socket = getPageSocket();
 
-        socket.on('connect', function () {
+        socket.on('connect', function() {
             var html_personalUrl = $('personalUrl');
             html_personalUrl.href = socket.socket.sessionid + '/';
             html_personalUrl.innerHTML = html_personalUrl.href;
@@ -25,12 +25,22 @@
             socket.emit('updateFiles', getFiles());
         });
 
-        socket.on('disconnect', function () {
+        socket.on('disconnect', function() {
             $('personalUrl').style.display = 'none';
             $('connectingMsg').style.display = 'inline';
         });
 
-        $('file').addEventListener('change', function () {
+        socket.on('getChunk', function(fileName, offset, chunkSize, callback) {
+            var file = Array.prototype.filter.call($('file').files, function(file) { return file.name == fileName })[0];
+            var reader = new FileReader();
+            reader.addEventListener('load', function(event) {
+                var chunkData = Array.prototype.slice.call(new Uint8Array(reader.result));
+                callback(chunkData);
+            });
+            reader.readAsArrayBuffer(file.slice(offset, offset + chunkSize));
+        });
+
+        $('file').addEventListener('change', function() {
             socket.emit('updateFiles', getFiles());
         });
     });

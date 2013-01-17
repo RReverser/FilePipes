@@ -40,6 +40,8 @@ httpServer.listen(app.get('port'), function() {
 });
 
 io.sockets.on('connection', function(socket) {
+    socket.set('files', []);
+
     socket.on('updateFiles', function(newFiles) {
         console.log(socket.id + ' updated list of files (count = ' + newFiles.length + ')')
         socket.set('files', newFiles);
