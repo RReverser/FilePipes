@@ -1,0 +1,7 @@
+<% if (files) files.forEach(function(file) { %>
+    <tr>
+    	<td><a href="<%= file.name %>" title="Download"><%= file.name %></a></td>
+    	<td><%= Math.round(file.size * 1000 / 1024) / 1000 %></td>
+    	<td><%= file.type %></td>
+    </tr>
+<% }) %>

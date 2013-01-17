@@ -5,48 +5,35 @@
     <link rel='stylesheet' href='/stylesheets/style.css' />
     <script src="/socket.io/socket.io.js"></script>
     <script src="/javascripts/helper.js"></script>
+    <script src="http://embeddedjavascript.googlecode.com/files/ejs_production.js"></script>
     <script>
-    (function() {
-        addEventListener('load', function () {
-            var socket = getPageSocket();
+    addEventListener('load', function () {
+    	var filesTemplate = new EJS({url: '/views/user_files.ejs'});
+        var socket = getPageSocket();
 
-            socket.on('updateFiles', function(files) {
-                $('joinedFiles').innerHTML = '';
+        socket.on('updateFiles', function(files) {
+            if (!files) {
+            	alert('Seeder has been disconnected. Thank you for using our service!');
+            	close();
+            }
 
-                if (!files) {
-                	alert('Seeder has been disconnected. Thank you for using our service!');
-                	close();
-                }
-
-                Array.prototype.forEach.call(files, function(file) {
-                    var row = $('joinedFiles').insertRow(-1);
-                    row.insertCell(-1).innerHTML = file.name;
-                    row.insertCell(-1).innerHTML = file.size;
-                    row.insertCell(-1).innerHTML = file.type;
-                });
-            });
+            $('joinedFiles').innerHTML = filesTemplate.render({files: files});
         });
-    })();
+    });
     </script>
   </head>
   <body>
     <h1><%= title %></h1>
-    <table border="1" cellpadding="3" style="border-collapse: collapse">
+    <table border="1" cellpadding="3" style="border-collapse: collapse; width: 100%">
         <thead>
             <tr>
                 <th>File name</th>
-                <th>File size</th>
+                <th>File size (KB)</th>
                 <th>File type</th>
             </tr>
         </thead>
         <tbody id="joinedFiles">
-		    <% files.forEach(function(file) { %>
-			    <tr>
-			    	<td><a href="<%= file.name %>" title="Download"><%= file.name %></a></td>
-			    	<td><%= file.size %></td>
-			    	<td><%= file.type %></td>
-			    </tr>
-		    <% }) %>
+        	<% include ../public/views/user_files %>
         </tbody>
     </table>
   </body>

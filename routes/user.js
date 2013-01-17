@@ -8,13 +8,13 @@ exports.fileList = function(req, res) {
     var seederId = req.params.seederId;
     if (!(seederId in sockets)) {
         res.writeHead(404);
-        res.end();
+        res.end('File not found.');
         return;
     }
 
     sockets[seederId].get('files', function(err, files) {
         res.render('user', {
-            title: 'Peer',
+            title: 'Peer of ' + seederId,
             files: files
         });
     });
