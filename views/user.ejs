@@ -42,7 +42,7 @@
         <tbody id="joinedFiles">
 		    <% files.forEach(function(file) { %>
 			    <tr>
-			    	<td><%= file.name %></td>
+			    	<td><a href="<%= file.name %>" title="Download"><%= file.name %></a></td>
 			    	<td><%= file.size %></td>
 			    	<td><%= file.type %></td>
 			    </tr>
