@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script src="/socket.io/socket.io.js"></script>
+	<script>
+	(function() {
+		function $(id) {
+			return id in $._cache ? $._cache[id] : $._cache[id] = document.getElementById(id);
+		}
+		$._cache = {};
+
+		addEventListener('load', function () {
+			var socket = io.connect('/');
+
+			socket.on('connect', function () {
+				$('sessionId').innerText = socket.socket.sessionid;
+
+				$('file').addEventListener('change', function () {
+					console.log('change');
+					socket.emit('updateFiles', this.files);
+				});
+
+				socket.emit('updateFiles', $('file').files);
+			});
+
+			$('joinAction').addEventListener('click', function () {
+				socket.emit('join', $('joinToId').value);
+			});
+
+			$('leaveAction').addEventListener('click', function () {
+				socket.emit('join');
+			});
+
+			socket.on('updateFiles', function (files) {
+				$('joinedFiles').innerHTML = '';
+
+				if (!files) return;
+
+				Array.prototype.forEach.call(files, function (file) {
+					var row = $('joinedFiles').insertRow(-1);
+					row.insertCell(-1).innerText = file.name;
+					row.insertCell(-1).innerText = file.size;
+					row.insertCell(-1).innerText = file.type;
+				});
+			});
+		});
+	})();
+	</script>
+</head>
+<body>
+	<h2>Your personal client ID: <span id="sessionId"><i>[ connecting... ]</i></span></h2>
+	<input type="file" id="file" multiple />
+	<hr />
+	<h2>Client you want to receive files from: <input type="text" id="joinToId" /><input type="button" id="joinAction" value="Join and get list of files" /><input type="button" id="leaveAction" value="Leave" /></h2>
+	<table border="1" cellpadding="3" style="border-collapse: collapse">
+		<thead>
+			<tr><th>File name</th><th>File size</th><th>File type</th></tr>
+		</thead>
+		<tbody id="joinedFiles"></tbody>
+	</table>
+</body>
+</html>
