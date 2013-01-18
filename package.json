@@ -1,12 +1,13 @@
 {
-  "name": "application-name",
-  "version": "0.0.1",
+  "name": "FilePipes",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "start": "node app"
   },
   "dependencies": {
     "express": "3.0.6",
-    "ejs": "*"
+    "ejs": "*",
+    "socket.io": "*"
   }
 }

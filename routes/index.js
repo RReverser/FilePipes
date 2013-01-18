@@ -4,6 +4,8 @@
 
 exports.index = function(req, res) {
     res.render('index', {
-        title: 'Seeder'
+        title: 'Seeder',
+        files: [],
+        filesAreLinks: false
     });
 };

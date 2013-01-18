@@ -15,7 +15,8 @@ exports.fileList = function(req, res) {
     sockets[seederId].get('files', function(err, files) {
         res.render('user', {
             title: 'Peer of ' + seederId,
-            files: files
+            files: files,
+            filesAreLinks: true
         });
     });
 };

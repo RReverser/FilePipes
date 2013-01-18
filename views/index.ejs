@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title><%= title %></title>
-    <link rel='stylesheet' href='/stylesheets/style.css' />
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/javascripts/helper.js"></script>
+    <% include header %>
     <script>
     addEventListener('load', function() {
+        var filesTemplate = new EJS({url: '/views/files.ejs'});
+        var socket = getPageSocket();
+
         function getFiles() {
             return Array.prototype.map.call($('file').files, function(file) {
                 return {
@@ -16,8 +16,6 @@
                 };
             });
         }
-
-        var socket = getPageSocket();
 
         socket.on('connect', function() {
             var html_personalUrl = $('personalUrl');
@@ -42,7 +40,9 @@
         });
 
         $('file').addEventListener('change', function() {
-            socket.emit('updateFiles', getFiles());
+            var files = getFiles();
+            socket.emit('updateFiles', files);
+            $('fileList').innerHTML = filesTemplate.render({files: files, filesAreLinks: false});
         });
     });
     </script>
@@ -50,5 +50,6 @@
 <body>
     <h2>Your personal client URL: <a id="personalUrl" style="display: none"></a><i id="connectingMsg">[ connecting... ]</i></h2>
     <input type="file" id="file" multiple />
+    <% include ../public/views/files_table.ejs %>
 </body>
 </html>

@@ -1,14 +1,10 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= title %></title>
-    <link rel='stylesheet' href='/stylesheets/style.css' />
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/javascripts/helper.js"></script>
-    <script src="http://embeddedjavascript.googlecode.com/files/ejs_production.js"></script>
+    <% include header %>
     <script>
     addEventListener('load', function() {
-    	var filesTemplate = new EJS({url: '/views/user_files.ejs'});
+    	var filesTemplate = new EJS({url: '/views/files.ejs'});
         var socket = getPageSocket();
 
         socket.on('updateFiles', function(files) {
@@ -17,24 +13,13 @@
             	close();
             }
 
-            $('joinedFiles').innerHTML = filesTemplate.render({files: files});
+            $('fileList').innerHTML = filesTemplate.render({files: files, filesAreLinks: true});
         });
     });
     </script>
   </head>
   <body>
     <h1><%= title %></h1>
-    <table border="1" cellpadding="3" style="border-collapse: collapse; width: 100%">
-        <thead>
-            <tr>
-                <th>File name</th>
-                <th>File size (KB)</th>
-                <th>File type</th>
-            </tr>
-        </thead>
-        <tbody id="joinedFiles">
-        	<% include ../public/views/user_files %>
-        </tbody>
-    </table>
+    <% include ../public/views/files_table.ejs %>
   </body>
 </html>

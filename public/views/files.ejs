@@ -1,0 +1,15 @@
+<% files.forEach(function(file) { %>
+    <tr>
+    	<td>
+    		<% if (filesAreLinks) { %>
+    			<a href="<%= file.name %>" title="Download">
+    		<% } %>
+    			<%= file.name %>
+    		<% if (filesAreLinks) { %>
+    			</a>
+    		<% } %>
+    	</td>
+    	<td><%= Math.round(file.size * 1000 / 1024) / 1000 %></td>
+    	<td><%= file.type %></td>
+    </tr>
+<% }) %>
