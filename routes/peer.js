@@ -2,6 +2,8 @@
  * GET users listing.
  */
 
+const chunkSize = 64 * 1024;
+
 function getSeeder(req, res) {
     var seederId = req.params.seederId;
 
@@ -67,7 +69,6 @@ exports.fileDownload = function(req, res) {
             'Content-Range': 'bytes ' + range.start + '-' + range.end + '/' + file.size
         });
 
-        var chunkSize = 64 * 1024;
         var isDisconnected = false;
 
         req.on('close', function() {
