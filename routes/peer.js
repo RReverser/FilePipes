@@ -39,7 +39,7 @@ exports.index = function(req, res) {
 
     seeder.get('files', function(err, files) {
         res.render('peer', {
-            title: 'Peer of ' + seeder.id,
+            title: 'Peer of ' + seeder.alias,
             files: files,
             filesAreLinks: true
         });
@@ -61,7 +61,7 @@ exports.fileDownload = function(req, res) {
             range.isPartial = true;
         }
 
-        console.log('Transferring ' + file.name + ' from ' + seeder.id + ' (bytes ' + range.start + '-' + range.end + ')');
+        console.log('Transferring ' + file.name + ' from ' + seeder.alias + ' (bytes ' + range.start + '-' + range.end + ')');
         res.writeHead(range.isPartial ? 206 : 200, {
             'Accept-Ranges': 'bytes',
             'Content-Type': file.type,
@@ -73,7 +73,7 @@ exports.fileDownload = function(req, res) {
 
         req.on('close', function() {
             isDisconnected = true;
-            console.log('Transfer of ' + file.name + ' from ' + seeder.id + ' was interrupted.');
+            console.log('Transfer of ' + file.name + ' from ' + seeder.alias + ' was interrupted.');
         });
 
         function transferChunk(offset) {

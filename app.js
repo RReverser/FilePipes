@@ -13,7 +13,7 @@ var express = require('express'),
         'log level': 2
     });
 
-global.sockets = io.sockets.sockets;
+global.sockets = {};
 
 app.configure(function() {
     app.set('port', process.env.PORT || 3000);
@@ -41,13 +41,20 @@ httpServer.listen(app.get('port'), function() {
 });
 
 io.sockets.on('connection', function(socket) {
-    socket.on('updateFiles', function(newFiles) {
-        console.log(socket.id + ' updated list of files (count = ' + newFiles.length + ')')
-        socket.set('files', newFiles);
-        io.of('/' + socket.id).emit('updateFiles', newFiles);
-    });
+    socket.on('trySetAlias', function(socketAlias, callback) {
+        socket.alias = (socketAlias && !(socketAlias in global.sockets)) ? socketAlias : socket.id;
+        global.sockets[socket.alias] = socket;
+        callback(socket.alias);
 
-    socket.on('disconnect', function() {
-        io.of('/' + socket.id).emit('updateFiles');
+        socket.on('updateFiles', function(newFiles) {
+            console.log(socket.alias + ' updated list of files (count = ' + newFiles.length + ')')
+            socket.set('files', newFiles);
+            io.of('/' + socket.persistentId).emit('updateFiles', newFiles);
+        });
+
+        socket.on('disconnect', function() {
+            io.of('/' + socket.alias).emit('updateFiles');
+            delete global.sockets[socket.alias];
+        });
     });
 });

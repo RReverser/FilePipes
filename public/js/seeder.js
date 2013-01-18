@@ -20,14 +20,20 @@ addEventListener('load', function() {
 
     $('file').addEventListener('change', fileChangeHandler);
 
-    socket.on('connect', function() {
-        var html_personalUrl = $('personalUrl');
-        html_personalUrl.href = socket.socket.sessionid + '/';
-        html_personalUrl.innerHTML = html_personalUrl.href;
-        $('connectingMsg').classList.add('hidden');
-        $('personalUrl').classList.remove('hidden');
+    var socketAlias;
 
-        fileChangeHandler();
+    socket.on('connect', function() {
+        socket.emit('trySetAlias', socketAlias, function(newAlias) {
+            socketAlias = newAlias;
+
+            var html_personalUrl = $('personalUrl');
+            html_personalUrl.href = socketAlias + '/';
+            html_personalUrl.innerHTML = html_personalUrl.href;
+            $('connectingMsg').classList.add('hidden');
+            $('personalUrl').classList.remove('hidden');
+
+            fileChangeHandler();
+        });
     });
 
     socket.on('disconnect', function() {
