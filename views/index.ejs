@@ -9,7 +9,11 @@
     addEventListener('load', function() {
         function getFiles() {
             return Array.prototype.map.call($('file').files, function(file) {
-                return {name: file.name, size: file.size, type: file.type};
+                return {
+                    name: file.name,
+                    size: file.size,
+                    type: file.type
+                };
             });
         }
 
@@ -33,11 +37,8 @@
         socket.on('getChunk', function(fileName, offset, chunkSize, callback) {
             var file = Array.prototype.filter.call($('file').files, function(file) { return file.name == fileName })[0];
             var reader = new FileReader();
-            reader.addEventListener('load', function(event) {
-                var chunkData = Array.prototype.slice.call(new Uint8Array(reader.result));
-                callback(chunkData);
-            });
-            reader.readAsArrayBuffer(file.slice(offset, offset + chunkSize));
+            reader.addEventListener('load', function() { callback(reader.result) });
+            reader.readAsBinaryString(file.slice(offset, offset + chunkSize));
         });
 
         $('file').addEventListener('change', function() {

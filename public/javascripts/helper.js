@@ -5,6 +5,7 @@ $._cache = {};
 
 function getPageSocket() {
 	return io.connect(location.pathname.replace(/\/$/, ''), {
-	    'max reconnection attempts': Infinity
+	    'max reconnection attempts': Infinity,
+	    'reconnection delay': 0
 	});
 }

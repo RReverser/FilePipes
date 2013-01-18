@@ -42,7 +42,10 @@ exports.fileDownload = function(req, res) {
         }
 
         console.log('Transferring ' + file.name + ' from ' + seederId);
-        res.writeHead(200, {'Content-Type': file.type, 'Content-Length': file.size});
+        res.writeHead(200, {
+            'Content-Type': file.type,
+            'Content-Length': file.size
+        });
 
         var chunkSize = 64 * 1024;
 
@@ -53,7 +56,7 @@ exports.fileDownload = function(req, res) {
                     res.end();
                     return;
                 }
-                res.write(new Buffer(data));
+                res.write(new Buffer(data, 'binary'));
                 nextChunk(offset + chunkSize);
             });
         }
