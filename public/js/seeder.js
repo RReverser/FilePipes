@@ -12,6 +12,14 @@ addEventListener('load', function() {
         });
     }
 
+    function fileChangeHandler() {
+        var files = getFiles();
+        socket.emit('updateFiles', files);
+        $('fileList').innerHTML = filesTemplate.render({files: files, filesAreLinks: false});
+    }
+
+    $('file').addEventListener('change', fileChangeHandler);
+
     socket.on('connect', function() {
         var html_personalUrl = $('personalUrl');
         html_personalUrl.href = socket.socket.sessionid + '/';
@@ -19,7 +27,7 @@ addEventListener('load', function() {
         $('connectingMsg').classList.add('hidden');
         $('personalUrl').classList.remove('hidden');
 
-        socket.emit('updateFiles', getFiles());
+        fileChangeHandler();
     });
 
     socket.on('disconnect', function() {
@@ -33,11 +41,5 @@ addEventListener('load', function() {
         var reader = new FileReader();
         reader.addEventListener('load', function() { callback(reader.result) });
         reader.readAsBinaryString(file.slice(offset, offset + chunkSize));
-    });
-
-    $('file').addEventListener('change', function() {
-        var files = getFiles();
-        socket.emit('updateFiles', files);
-        $('fileList').innerHTML = filesTemplate.render({files: files, filesAreLinks: false});
     });
 });

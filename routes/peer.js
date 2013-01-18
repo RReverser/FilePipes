@@ -14,6 +14,24 @@ function getSeeder(req, res) {
     return global.sockets[seederId];
 }
 
+function getFile(req, res, callback) {
+    var seeder = getSeeder(req, res);
+
+    seeder.get('files', function(err, files) {
+        var file = files.filter(function(file) {
+            return file.name == req.params.fileName
+        })[0];
+
+        if (!file) {
+            res.writeHead(404);
+            res.end('File not found.');
+            throw new Error('File not found.');
+        }
+
+        callback(seeder, file);
+    });
+}
+
 exports.index = function(req, res) {
     var seeder = getSeeder(req, res);
 
@@ -27,27 +45,40 @@ exports.index = function(req, res) {
 };
 
 exports.fileDownload = function(req, res) {
-    var seeder = getSeeder(req, res);
+    getFile(req, res, function(seeder, file) {
+        var range = {
+            start: 0,
+            end: file.size - 1,
+            isPartial: false
+        };
 
-    seeder.get('files', function(err, files) {
-        var file = files.filter(function(file) { return file.name == req.params.fileName })[0];
-
-        if (!file) {
-            res.writeHead(404);
-            res.end('File not found.');
-            return;
+        if ('range' in req.headers) {
+            var offsets = req.headers.range.match(/^bytes=(\d+)?-(\d+)?$/).slice(1).map(Number);
+            range.start = offsets[0] || range.start;
+            range.end = offsets[1] || range.end;
+            range.isPartial = true;
         }
 
-        console.log('Transferring ' + file.name + ' from ' + seeder.id);
-        res.writeHead(200, {
+        console.log('Transferring ' + file.name + ' from ' + seeder.id + ' (bytes ' + range.start + '-' + range.end + ')');
+        res.writeHead(range.isPartial ? 206 : 200, {
+            'Accept-Ranges': 'bytes',
             'Content-Type': file.type,
-            'Content-Length': file.size
+            'Content-Length': range.end - range.start + 1,
+            'Content-Range': 'bytes ' + range.start + '-' + range.end + '/' + file.size
         });
 
         var chunkSize = 64 * 1024;
+        var isDisconnected = false;
+
+        req.on('close', function() {
+            isDisconnected = true;
+            console.log('Transfer of ' + file.name + ' from ' + seeder.id + ' was interrupted.');
+        });
 
         function transferChunk(offset) {
             seeder.emit('getChunk', file.name, offset, chunkSize, function(data) {
+                if (isDisconnected) return;
+
                 if (!data.length) {
                     res.end();
                     return;
@@ -56,7 +87,6 @@ exports.fileDownload = function(req, res) {
                 transferChunk(offset + chunkSize);
             });
         }
-
-        transferChunk(0);
+        transferChunk(range.start);
     });
 }
