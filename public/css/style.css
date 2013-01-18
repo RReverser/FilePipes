@@ -1,0 +1,23 @@
+body {
+    padding: 50px;
+    font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+    color: #00B7FF;
+}
+
+#fileTable {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 1em;
+}
+
+#fileTable th, #fileTable td {
+    border: 1px solid #333;
+    padding: 3px;
+}
+
+.hidden {
+    display: none;
+}

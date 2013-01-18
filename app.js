@@ -3,8 +3,8 @@
  */
 
 var express = require('express'),
-    routes = require('./routes'),
-    user = require('./routes/user'),
+    seeder = require('./routes/seeder'),
+    peer = require('./routes/peer'),
     http = require('http'),
     path = require('path'),
     app = express(),
@@ -13,17 +13,18 @@ var express = require('express'),
         'log level': 2
     });
 
-global.io = io;
+global.sockets = io.sockets.sockets;
 
 app.configure(function() {
     app.set('port', process.env.PORT || 3000);
-    app.set('views', __dirname + '/views');
+    app.set('views', './views');
     app.set('view engine', 'ejs');
     app.use(express.favicon());
     app.use(express.logger('dev'));
     app.use(express.bodyParser());
     app.use(express.methodOverride());
-    app.use(express.static(path.join(__dirname, 'public')));
+    app.use(express.static('./public'));
+    app.use('/views', express.static('./views/public'));
     app.use(app.router);
 });
 
@@ -31,17 +32,15 @@ app.configure('development', function() {
     app.use(express.errorHandler());
 });
 
-app.get('/', routes.index);
-app.get('/:seederId', user.fileList);
-app.get('/:seederId/:fileName', user.fileDownload);
+app.get('/', seeder.index);
+app.get('/:seederId', peer.index);
+app.get('/:seederId/:fileName', peer.fileDownload);
 
 httpServer.listen(app.get('port'), function() {
     console.log("Express server listening on port " + app.get('port'));
 });
 
 io.sockets.on('connection', function(socket) {
-    socket.set('files', []);
-
     socket.on('updateFiles', function(newFiles) {
         console.log(socket.id + ' updated list of files (count = ' + newFiles.length + ')')
         socket.set('files', newFiles);

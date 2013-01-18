@@ -2,19 +2,24 @@
  * GET users listing.
  */
 
-exports.fileList = function(req, res) {
-    var sockets = global.io.sockets.sockets;
-
+function getSeeder(req, res) {
     var seederId = req.params.seederId;
-    if (!(seederId in sockets)) {
+
+    if (!(seederId in global.sockets)) {
         res.writeHead(404);
         res.end('Seeder not found.');
-        return;
+        throw new Error('Seeder not found.');
     }
 
-    sockets[seederId].get('files', function(err, files) {
-        res.render('user', {
-            title: 'Peer of ' + seederId,
+    return global.sockets[seederId];
+}
+
+exports.index = function(req, res) {
+    var seeder = getSeeder(req, res);
+
+    seeder.get('files', function(err, files) {
+        res.render('peer', {
+            title: 'Peer of ' + seeder.id,
             files: files,
             filesAreLinks: true
         });
@@ -22,16 +27,7 @@ exports.fileList = function(req, res) {
 };
 
 exports.fileDownload = function(req, res) {
-    var sockets = global.io.sockets.sockets;
-
-    var seederId = req.params.seederId;
-    if (!(seederId in sockets)) {
-        res.writeHead(404);
-        res.end('Seeder not found.');
-        return;
-    }
-
-    var seeder = sockets[seederId];
+    var seeder = getSeeder(req, res);
 
     seeder.get('files', function(err, files) {
         var file = files.filter(function(file) { return file.name == req.params.fileName })[0];
@@ -42,7 +38,7 @@ exports.fileDownload = function(req, res) {
             return;
         }
 
-        console.log('Transferring ' + file.name + ' from ' + seederId);
+        console.log('Transferring ' + file.name + ' from ' + seeder.id);
         res.writeHead(200, {
             'Content-Type': file.type,
             'Content-Length': file.size
@@ -50,18 +46,17 @@ exports.fileDownload = function(req, res) {
 
         var chunkSize = 64 * 1024;
 
-        function nextChunk(offset) {
-            offset = offset || 0;
+        function transferChunk(offset) {
             seeder.emit('getChunk', file.name, offset, chunkSize, function(data) {
                 if (!data.length) {
                     res.end();
                     return;
                 }
                 res.write(new Buffer(data, 'binary'));
-                nextChunk(offset + chunkSize);
+                transferChunk(offset + chunkSize);
             });
         }
 
-        nextChunk();
+        transferChunk(0);
     });
 }
