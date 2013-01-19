@@ -3,58 +3,39 @@
  */
 
 var express = require('express'),
-    seeder = require('./routes/seeder'),
-    peer = require('./routes/peer'),
     http = require('http'),
-    path = require('path'),
-    app = express(),
-    httpServer = http.createServer(app),
-    io = require('socket.io').listen(httpServer, {
-        'log level': 2
-    });
+    socketIO = require('socket.io'),
+    routes = {
+        seeder: require('./routes/seeder'),
+        peer: require('./routes/peer')
+    },
+    server = {};
 
-global.sockets = {};
+server.express = express();
+server.http = http.createServer(server.express);
+server.io = socketIO.listen(server.http, {'log level': 2});
 
-app.configure(function() {
-    app.set('port', process.env.PORT || 3000);
-    app.set('views', './views');
-    app.set('view engine', 'ejs');
-    app.use(express.favicon());
-    app.use(express.logger('dev'));
-    app.use(express.bodyParser());
-    app.use(express.methodOverride());
-    app.use(express.static('./public'));
-    app.use('/views', express.static('./views/public'));
-    app.use(app.router);
+server.express.configure(function() {
+    this.set('port', process.env.PORT || 3000);
+    this.set('views', './views');
+    this.set('view engine', 'ejs');
+    this.use(express.favicon());
+    this.use(express.logger('dev'));
+    this.use(express.bodyParser());
+    this.use(express.methodOverride());
+    this.use(express.static('./public'));
+    this.use('/views', express.static('./views/public'));
+    this.use(this.router);
 });
 
-app.configure('development', function() {
-    app.use(express.errorHandler());
+server.express.configure('development', function() {
+    this.use(express.errorHandler());
 });
 
-app.get('/', seeder.index);
-app.get('/:seederId', peer.index);
-app.get('/:seederId/:fileName', peer.fileDownload);
+for (var routeName in routes) {
+    routes[routeName].bindTo(server);
+}
 
-httpServer.listen(app.get('port'), function() {
-    console.log("Express server listening on port " + app.get('port'));
-});
-
-io.sockets.on('connection', function(socket) {
-    socket.on('trySetAlias', function(socketAlias, callback) {
-        socket.alias = (socketAlias && !(socketAlias in global.sockets)) ? socketAlias : socket.id;
-        global.sockets[socket.alias] = socket;
-        callback(socket.alias);
-
-        socket.on('updateFiles', function(newFiles) {
-            console.log(socket.alias + ' updated list of files (count = ' + newFiles.length + ')')
-            socket.set('files', newFiles);
-            io.of('/' + socket.persistentId).emit('updateFiles', newFiles);
-        });
-
-        socket.on('disconnect', function() {
-            io.of('/' + socket.alias).emit('updateFiles');
-            delete global.sockets[socket.alias];
-        });
-    });
+server.http.listen(server.express.get('port'), function() {
+    console.log("Express server listening on port " + server.express.get('port'));
 });

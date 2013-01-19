@@ -4,40 +4,58 @@
 
 const chunkSize = 64 * 1024;
 
-function getSeeder(req, res) {
+var sockets = require('./seeder').sockets;
+
+function getSeeder(req, res, callback) {
     var seederId = req.params.seederId;
 
-    if (!(seederId in global.sockets)) {
-        res.writeHead(404);
-        res.end('Seeder not found.');
-        throw new Error('Seeder not found.');
+    if (!(seederId in sockets)) {
+        callback('Seeder not found.');
+        return;
     }
 
-    return global.sockets[seederId];
+    callback(null, sockets[seederId]);
+}
+
+function getFiles(req, res, callback) {
+    getSeeder(req, res, function(err, seeder) {
+        if (err) {
+            callback(err);
+            return;
+        }
+
+        seeder.get('files', function(err, files) { callback(err, files, seeder) });
+    });
 }
 
 function getFile(req, res, callback) {
-    var seeder = getSeeder(req, res);
+    getFiles(req, res, function(err, files, seeder) {
+        if (err) {
+            callback(err);
+            return;
+        }
 
-    seeder.get('files', function(err, files) {
         var file = files.filter(function(file) {
             return file.name == req.params.fileName
         })[0];
 
         if (!file) {
-            res.writeHead(404);
-            res.end('File not found.');
-            throw new Error('File not found.');
+            callback('File not found.');
+            return;
         }
 
-        callback(seeder, file);
+        callback(null, file, files, seeder);
     });
 }
 
-exports.index = function(req, res) {
-    var seeder = getSeeder(req, res);
+function index(req, res) {
+    getFiles(req, res, function(err, files, seeder) {
+        if (err) {
+            res.writeHead(404);
+            res.end(String(err));
+            throw new Error(err);
+        }
 
-    seeder.get('files', function(err, files) {
         res.render('peer', {
             title: 'Peer of ' + seeder.alias,
             files: files,
@@ -46,8 +64,14 @@ exports.index = function(req, res) {
     });
 };
 
-exports.fileDownload = function(req, res) {
-    getFile(req, res, function(seeder, file) {
+function fileDownload(req, res) {
+    getFile(req, res, function(err, file, files, seeder) {
+        if (err) {
+            res.writeHead(404);
+            res.end(String(err));
+            throw new Error(err);
+        }
+
         var range = {
             start: 0,
             end: file.size - 1,
@@ -76,6 +100,10 @@ exports.fileDownload = function(req, res) {
             console.log('Transfer of ' + file.name + ' from ' + seeder.alias + ' was interrupted.');
         });
 
+        req.on('end', function() {
+            console.log('Transfer of ' + file.name + ' from ' + seeder.alias + ' was finished.');
+        });
+
         function transferChunk(offset) {
             seeder.emit('getChunk', file.name, offset, chunkSize, function(data) {
                 if (isDisconnected) return;
@@ -90,4 +118,10 @@ exports.fileDownload = function(req, res) {
         }
         transferChunk(range.start);
     });
+}
+
+
+exports.bindTo = function(server) {
+    server.express.get('/:seederId', index);
+    server.express.get('/:seederId/:fileName', fileDownload);
 }
