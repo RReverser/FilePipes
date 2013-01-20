@@ -44,8 +44,19 @@ addEventListener('load', function() {
     socket.on('getChunk', function(fileName, offset, chunkSize, callback) {
         var files = $('file').files;
         var file = Array.prototype.filter.call(files, function(file) { return file.name == fileName })[0];
+        var blob = file.slice(offset, offset + chunkSize);
         var reader = new FileReader();
-        reader.addEventListener('load', function() { callback(reader.result) });
-        reader.readAsBinaryString(file.slice(offset, offset + chunkSize));
+
+        if ('readAsBinaryString' in FileReader.prototype) {
+            reader.addEventListener('load', function() { callback(reader.result) });
+            reader.readAsBinaryString(blob);
+        } else {
+            reader.addEventListener('load', function() {
+                var bytes = new Uint8Array(reader.result);
+                var binaryString = String.fromCharCode.apply(String, bytes);
+                callback(binaryString);
+            });
+            reader.readAsArrayBuffer(blob);
+        }
     });
 });
